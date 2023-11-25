@@ -1,0 +1,13 @@
+---
+layout: default
+title: Gallery
+
+---
+
+{%- for image in site.data.images -%}
+  <div class="image">
+    <img src="{{ image.url }}" alt="{{ image.title }}" />
+    <h3> {{ image.title }} </h3>
+  </div>
+  <br>
+{%- endfor -%}
