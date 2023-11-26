@@ -1,10 +1,130 @@
 body {
-  max-width: 600px;
-  margin: 50px auto;
+  margin: 0 auto;
   font-family: sans-serif;
 }
 
-.image, .image img {
+
+.header {
+  background: firebrick;
+  height: 20vh;
+  line-height: 20vh;
   width: 100%;
+  text-align: center;
+  color: white;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 50px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.content {
+  padding: 0 10px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+
+.content h4 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.content p {
+  margin: 8px 0;
+}
+
+
+.swiper {
+  margin: 10px 0;
+  width: 100%;
+}
+
+/* * {
+  box-sizing: border-box;
+  outline: 1px solid #f00 !important;
+} */
+
+.swiper-slide{
+  text-align: center;
+}
+
+.swiper-slide {
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Card flipping */
+.scene {
+  max-width: 400px;
+  height: 600px;
+  perspective: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  /* card face and card should have equal height and width */
+  width: 95%;
+  height: 95%;
+  position: relative;
+  transition: transform 1s;
+  transform-style: preserve-3d;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.card__face {
+  position: absolute;
+  /* card face and card should have equal height and width */
+  height: 95%;
+  width: 95%;
+  backface-visibility: hidden;
+  background-position: center;
+  background-size: contain;
+  border: 10px solid seagreen;
+  border-radius: 5px;
+  /* background-color: blue; */
+}
+
+.card__face--back {
+  transform: rotateY(180deg);
+  /* background: red; */
+}
+
+.card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.v-center {
+  transform: translateY(150px);
+}
+
+/* Card Face  Styles */
+
+.card h3 {
+  font-size: 32px;
+  margin: 20px auto;
+  font-weight: bolder;
+  letter-spacing: 3px;
+}
+
+.card img {
+  width: 50%;
+}
+
+.card p, .card ul {
+  margin: 20px 20px;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.card p {
+  text-align: center;
 }
 

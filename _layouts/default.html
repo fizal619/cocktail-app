@@ -4,20 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title> {{ page.title }} </title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍸</text></svg>">
+  <link href="
+https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css
+" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <h1>{{ page.title }}</h1>
-  <p>
-    <a href="/">Home</a> |
-    <a href="/about">About</a> |
-    <a href="/gallery">Gallery</a>
-  </p>
+  <div class="header">
+    <h1>{{ page.title }}</h1>
+  </div>
 
-  {{ content }}
+  <div class="content main">
+    {{ content }}
+  </div>
 
-  <p id="footer">Copyright ©️ 2023 Fizal</p>
+  <br>
+  <br>
+  <br>
 
+  <div class="content footer">
+    <p>Copyright ©️ 2023 Fizal Sarif</p>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="/js/main.js"></script>
 </body>
 </html>
