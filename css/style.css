@@ -6,8 +6,8 @@ body {
 
 .header {
   background: firebrick;
-  height: 20vh;
-  line-height: 20vh;
+  height: 10vh;
+  line-height: 10vh;
   width: 100%;
   text-align: center;
   color: white;
@@ -84,7 +84,7 @@ body {
   backface-visibility: hidden;
   background-position: center;
   background-size: contain;
-  border: 10px solid seagreen;
+  border: 5px solid rgb(243, 240, 36);
   border-radius: 5px;
   /* background-color: blue; */
 }
@@ -128,3 +128,27 @@ body {
   text-align: center;
 }
 
+.ingredients {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instructions {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: salmon;
+}
+
+.main {
+  height: 80vh;
+}
+
+.footer {
+
+}

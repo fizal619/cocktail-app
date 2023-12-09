@@ -1,0 +1,29 @@
+
+<div class="swiper-slide">
+  <div class="scene">
+    <div class="card">
+      <div class="card__face card__face--front">
+        <h3>{{ drink.name }}</h3>
+        <hr>
+        <img src="https://placehold.co/400x400?text=placeholder" alt="drink" />
+        <hr>
+        <div class="ingredients">
+          <ul>
+            {%- for item in drink.ingredients -%}
+              <li>{{ item }}</li>
+            {%- endfor -%}
+          </ul>
+        </div class="ingredients">
+        <div class="instructions">
+          <p>{{ drink.instruction }}</p>
+        </div>
+      </div>
+      <div class="card__face card__face--back">
+        <div class="v-center">
+          <img src="https://placehold.co/400x400?text=placeholder" alt="drink" />
+          <h3>{{ drink.name }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,73 @@
+- name: Martini
+  ingredients:
+  - 2 oz Gin or Vodka
+  - 1/2 oz Dry Vermouth
+  - Olive/Lemon Twist
+  instruction: Shake/Stir then strain
+
+- name: Margarita
+  ingredients:
+  - 2 oz Tequila
+  - 1 oz Triple Sec
+  - 1 oz Lime Juice
+  instruction: Shake then strain
+
+- name: Old Fashioned
+  ingredients:
+    - 2 oz Bourbon or Rye Whiskey
+    - 1 Sugar Cube
+    - 2-3 dashes Bitters
+  instruction: Stir
+
+- name: Mojito
+  ingredients:
+    - 2 oz White Rum
+    - 1 oz Lime Juice
+    - Soda Water
+    - Simple Syrup & Mint
+  instruction: Syrup and mint then rum and top with soda water
+
+- name: Negroni
+  ingredients:
+    - 1 oz Gin
+    - 1 oz Sweet Vermouth
+    - 1 oz Campari
+    - Orange twist
+  instruction: Stir/Shake then strain
+
+- name: Whiskey Sour
+  ingredients:
+    - 2 oz Bourbon / Whiskey
+    - 3/4 oz Lemon Juice
+    - Simple Syrup
+    - A Cherry
+  instruction: Shake then strain
+
+- name: Cosmopolitan
+  ingredients:
+    - 1 1/2 oz Vodka
+    - 1 oz Triple Sec
+    - 1/2 oz Cranberry Juice
+    - 1/2 oz Lime Juice
+  instruction: Shake then strain
+
+- name: Daiquiri
+  ingredients:
+    - 2 oz White Rum
+    - 3/4 oz Simple Syrup
+    - 3/4 oz Lime Juice
+  instruction: Shake then strain
+
+- name: Tom Collins
+  ingredients:
+    - 2 oz Gin
+    - 1 oz Simple Syrup
+    - 3/4 oz Lemon Juice
+    - Soda Water
+  instruction: Shake then strain, and top with soda
+
+- name: Gin and Tonic
+  ingredients:
+    - 2 oz Gin
+    - Tonic Water
+  instruction: Stir
