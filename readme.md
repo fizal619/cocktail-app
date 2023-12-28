@@ -27,3 +27,6 @@
 - Profit 🤑💰
 
 ![](https://www.gifcen.com/wp-content/uploads/2022/04/bully-maguire-dancing-gif-2.gif)
+
+## Notes
+- https://tingle.robinparisi.com/

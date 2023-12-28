@@ -1,4 +1,5 @@
 - name: Martini
+  shortname: martini
   ingredients:
   - 2 oz Gin or Vodka
   - 1/2 oz Dry Vermouth
@@ -6,6 +7,7 @@
   instruction: Shake/Stir then strain
 
 - name: Margarita
+  shortname: margarita
   ingredients:
   - 2 oz Tequila
   - 1 oz Triple Sec
@@ -13,21 +15,24 @@
   instruction: Shake then strain
 
 - name: Old Fashioned
+  shortname: old_fashioned
   ingredients:
-    - 2 oz Bourbon or Rye Whiskey
+    - 2 oz Bourbon/Whiskey
     - 1 Sugar Cube
     - 2-3 dashes Bitters
   instruction: Stir
 
 - name: Mojito
+  shortname: mojito
   ingredients:
     - 2 oz White Rum
     - 1 oz Lime Juice
     - Soda Water
     - Simple Syrup & Mint
-  instruction: Syrup and mint then rum and top with soda water
+  instruction: Stir ingredients and top with soda water
 
 - name: Negroni
+  shortname: negroni
   ingredients:
     - 1 oz Gin
     - 1 oz Sweet Vermouth
@@ -36,37 +41,41 @@
   instruction: Stir/Shake then strain
 
 - name: Whiskey Sour
+  shortname: whiskey_sour
   ingredients:
-    - 2 oz Bourbon / Whiskey
+    - 2 oz Bourbon/Whiskey
     - 3/4 oz Lemon Juice
     - Simple Syrup
     - A Cherry
   instruction: Shake then strain
 
-- name: Cosmopolitan
+- name: Blue Lagoon
+  shortname: blue_lagoon
   ingredients:
-    - 1 1/2 oz Vodka
-    - 1 oz Triple Sec
-    - 1/2 oz Cranberry Juice
-    - 1/2 oz Lime Juice
-  instruction: Shake then strain
+    - 1 oz Peach Schnapps
+    - 1 oz Blue Curacao
+    - 2 oz Vodka
+    - Sprite
+  instruction: Stir
 
-- name: Daiquiri
+- name: Rum and Coke
+  shortname: rum_and_coke
   ingredients:
     - 2 oz White Rum
-    - 3/4 oz Simple Syrup
-    - 3/4 oz Lime Juice
-  instruction: Shake then strain
+    - Coke
+    - Lime Wedge
+  instruction: Stir
 
-- name: Tom Collins
+- name: Cape Codder
+  shortname: cape_codder
   ingredients:
-    - 2 oz Gin
-    - 1 oz Simple Syrup
-    - 3/4 oz Lemon Juice
-    - Soda Water
-  instruction: Shake then strain, and top with soda
+    - 2 oz Vodka
+    - 3 oz Cranberry Juice
+    - Lime Wedge
+  instruction: Stir
 
 - name: Gin and Tonic
+  shortname: gin_and_tonic
   ingredients:
     - 2 oz Gin
     - Tonic Water

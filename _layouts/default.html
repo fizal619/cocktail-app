@@ -9,6 +9,8 @@
 https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css
 " rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+  <link rel="stylesheet" href="/css/tingle.min.css">
+  <link rel="stylesheet" href="/css/circles.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -25,10 +27,19 @@ https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css
   <br>
 
   <div class="content footer">
-    <p>Copyright ©️ 2023 Fizal Sarif</p>
+
+  </div>
+
+  <div class="bg">
+    {%- for i in (1..100) -%}
+    <div class="circle-container">
+      <div class="circle"></div>
+    </div>
+  {%- endfor -%}
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="/js/tingle.min.js"></script>
   <script src="/js/main.js"></script>
 </body>
 </html>
