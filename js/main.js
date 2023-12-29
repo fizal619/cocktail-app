@@ -11,40 +11,101 @@ document.querySelectorAll(".card").forEach(card => {
   });
 });
 
+function editCard(shortname) {
 
-function inputOnChange(targetObj, key, value) {
-  targetObj[key] = value;
-  console.log(targetObj);
-}
+  const nameEL = document.getElementById(`${shortname}_name`);
+  const imageEL = document.getElementById(`${shortname}_image`);
+  const ingredientsEL = document.getElementById(`${shortname}_ingredients`);
+  const instructionsEL = document.getElementById(`${shortname}_instructions`);
+  const nameBackEL = document.getElementById(`${shortname}_name_back`);
+  const imageBackEL = document.getElementById(`${shortname}_image_back`);
+  let ingredients = Array.from(ingredientsEL.children).map(li=>li.textContent);
 
-function editCard(drink) {
-  const nameEL = document.getElementById(`${drink.shortname}_name`);
-  const imageEL = document.getElementById(`${drink.shortname}_image`);
-  const ingredientsEL = document.getElementById(`${drink.shortname}_ingredients`);
-  const instructionsEL = document.getElementById(`${drink.shortname}_instructions`);
-  const nameBackEL = document.getElementById(`${drink.shortname}_name_back`);
-  const imageBackEL = document.getElementById(`${drink.shortname}_image_back`);
+  // Rehydrate localstorage or load defaults
+  let drink = JSON.parse(localStorage.getItem(shortname) || "{}");
+  console.log(drink);
+  if (!drink.name) {
+    drink = {
+      name: nameEL.textContent,
+      image: imageEL.src,
+      ingredients,
+      instructions: instructionsEL.textContent
+    };
+  }
+
+  ingredients = ingredients.join("\n");
 
   const modal = new tingle.modal({
     footer: true,
     stickyFooter: false,
-    closeMethods: ['overlay', 'button', 'escape'],
-    closeLabel: "Close",
-    cssClass: ['custom-class-1', 'custom-class-2'],
+    closeMethods: [],
+    closeLabel: "Save and Close",
+    footer: true
   });
 
   modal.setContent(`
     <br>
-    Name: <input value="${drink.name}" id="${drink.shortname}_name_edit" />
     <br>
+    <p>Name:</p> <br>
+    <input type="text" value="${nameEL.textContent}" id="${shortname}_name_edit" />
+    <br>
+    <br>
+    <p>Ingredients:</p> <br>
+    <textarea id="${shortname}_ingredients_edit" rows=4>${ingredients}</textarea>
+    <br>
+    <br>
+    <p>Image:</p> <br>
+    <br>
+    <br>
+    Instructions:
+    <input type="text" value="${instructionsEL.textContent}" id="${shortname}_instructions_edit" />
   `);
+
+  // add a button
+  modal.addFooterBtn('Save and Close', 'tingle-btn', () => {
+    // here goes some logic
+    localStorage.setItem(shortname, JSON.stringify(drink));
+    rehydrate(shortname);
+    modal.close();
+  });
 
   modal.open();
 
   document
-    .getElementById(`${drink.shortname}_name_edit`)
-    .addEventListener("keyup", e => {
-      inputOnChange(drink, "name", e.target.value );
+    .getElementById(`${shortname}_name_edit`)
+    .addEventListener("input", e => {
+      drink.name = e.target.value;
+      console.log(drink);
     });
 
 }
+
+//REHYDRATE LOGIC
+function rehydrate(shortname) {
+  const nameEL = document.getElementById(`${shortname}_name`);
+  const imageEL = document.getElementById(`${shortname}_image`);
+  const ingredientsEL = document.getElementById(`${shortname}_ingredients`);
+  const instructionsEL = document.getElementById(`${shortname}_instructions`);
+  const nameBackEL = document.getElementById(`${shortname}_name_back`);
+  const imageBackEL = document.getElementById(`${shortname}_image_back`);
+
+  const drinkObj = JSON.parse(localStorage.getItem(shortname));
+
+  // console.log(drinkObj);
+
+  if (drinkObj) {
+    nameEL.textContent = drinkObj.name;
+    nameBackEL.textContent = drinkObj.name;
+    imageEL.src = drinkObj.image;
+    imageBackEL.src = drinkObj.image;
+    ingredientsEL.innerHTML = drinkObj.ingredients
+      .map(li => `<li>${li}</li>`)
+      .join("\n");
+    instructionsEL.textContent = drinkObj.instructions;
+  }
+}
+
+// REHYDRATE any edits on load
+document.querySelectorAll(".card").forEach(el => {
+  rehydrate(el.dataset.shortname);
+});

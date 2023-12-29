@@ -4,7 +4,6 @@ body {
   margin: 0 auto;
   font-family: sans-serif;
   background-color: #333;
-  font-family: 'VT323';
 }
 
 
@@ -24,6 +23,7 @@ body {
   letter-spacing: 3px;
   font-weight: bold;
   text-shadow: 1px 1px 2px black;
+  font-family: 'VT323';
 }
 
 .content {
@@ -34,7 +34,7 @@ body {
 
 
 .content h4 {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: bold;
   margin: 10px 0;
 }
@@ -116,7 +116,7 @@ hr {
 /* Card Face  Styles */
 
 .card h3 {
-  font-size: 48px;
+  font-size: 40px;
   margin: 10px auto;
   font-weight: bolder;
   letter-spacing: 3px;
@@ -129,10 +129,10 @@ hr {
 
 .card p, .card ul {
   margin: 5px 20px;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: bold;
   letter-spacing: 2px;
-  line-height: 1.2;
+  line-height: 1.5;
   text-align: left;
 }
 
@@ -171,3 +171,33 @@ hr {
   height: 100vh;
 }
 
+input, textarea {
+  padding: 10px 20px;
+  font-size: larger;
+  letter-spacing: 2px;
+  border-radius: 3px;
+  box-sizing: border-box;
+  border: 3px solid #ccc;
+  -webkit-transition: 0.5s;
+  transition: 0.5s;
+  outline: none;
+  width: 100%;
+}
+
+input[type=text]:focus, textarea:focus {
+  border: 3px solid #555;
+}
+
+.tingle-btn {
+  font-size: 24px;
+  background-color: #541945;
+  color: white;
+}
+
+.tingle-modal-box {
+  max-width: 600px;
+}
+
+.tingle-modal-box__footer {
+  text-align: center;
+}
