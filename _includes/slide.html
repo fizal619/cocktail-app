@@ -7,7 +7,8 @@
         <hr>
         <img
           id="{{ drink.shortname }}_image"
-          src="https://placehold.co/400x400?text=placeholder"
+          src="/assets/{{ drink.shortname }}.png"
+          onerror="this.src='https://placehold.co/400x400?text=placeholder'"
           alt="drink"
         />
         <hr>
@@ -26,7 +27,8 @@
         <div class="v-center">
           <img
             id="{{ drink.shortname }}_image_back"
-            src="https://placehold.co/400x400?text=placeholder"
+            src="/assets/{{ drink.shortname }}.png"
+            onerror="this.src='https://placehold.co/400x400?text=placeholder'"
             alt="drink"
           />
           <h3 id="{{ drink.shortname }}_name_back">{{ drink.name }}</h3>
