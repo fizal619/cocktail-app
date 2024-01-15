@@ -11,25 +11,25 @@ document.querySelectorAll(".card").forEach(card => {
   });
 });
 
+function resetCard(shortname) {
+  localStorage.removeItem(shortname);
+  rehydrate(shortname, true);
+}
+
 function editCard(shortname) {
 
   const nameEL = document.getElementById(`${shortname}_name`);
-  const imageEL = document.getElementById(`${shortname}_image`);
   const ingredientsEL = document.getElementById(`${shortname}_ingredients`);
   const instructionsEL = document.getElementById(`${shortname}_instructions`);
-  const nameBackEL = document.getElementById(`${shortname}_name_back`);
-  const imageBackEL = document.getElementById(`${shortname}_image_back`);
   let ingredients = Array.from(ingredientsEL.children).map(li=>li.textContent);
 
   // Rehydrate localstorage or load defaults
   let drink = JSON.parse(localStorage.getItem(shortname) || "{}");
-  console.log(drink);
   if (!drink.name) {
     drink = {
       name: nameEL.textContent,
-      image: imageEL.src,
       ingredients,
-      instructions: instructionsEL.textContent
+      instruction: instructionsEL.textContent
     };
   }
 
@@ -52,9 +52,6 @@ function editCard(shortname) {
     <br>
     <p>Ingredients:</p> <br>
     <textarea id="${shortname}_ingredients_edit" rows=4>${ingredients}</textarea>
-    <br>
-    <br>
-    <p>Image:</p> <br>
     <br>
     <br>
     Instructions:
@@ -81,27 +78,27 @@ function editCard(shortname) {
 }
 
 //REHYDRATE LOGIC
-function rehydrate(shortname) {
+function rehydrate(shortname, reset) {
   const nameEL = document.getElementById(`${shortname}_name`);
-  const imageEL = document.getElementById(`${shortname}_image`);
   const ingredientsEL = document.getElementById(`${shortname}_ingredients`);
   const instructionsEL = document.getElementById(`${shortname}_instructions`);
   const nameBackEL = document.getElementById(`${shortname}_name_back`);
-  const imageBackEL = document.getElementById(`${shortname}_image_back`);
 
-  const drinkObj = JSON.parse(localStorage.getItem(shortname));
+  let drinkObj = JSON.parse(localStorage.getItem(shortname));
 
-  // console.log(drinkObj);
+  if (reset) {
+    drinkObj = drinks.find(d=>d.shortname == shortname);
+  }
+
+  console.log(drinkObj);
 
   if (drinkObj) {
     nameEL.textContent = drinkObj.name;
     nameBackEL.textContent = drinkObj.name;
-    imageEL.src = drinkObj.image;
-    imageBackEL.src = drinkObj.image;
     ingredientsEL.innerHTML = drinkObj.ingredients
       .map(li => `<li>${li}</li>`)
       .join("\n");
-    instructionsEL.textContent = drinkObj.instructions;
+    instructionsEL.textContent = drinkObj.instruction;
   }
 }
 

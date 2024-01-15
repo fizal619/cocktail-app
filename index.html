@@ -10,10 +10,13 @@ title: DRINKLE
   <!-- Additional required wrapper -->
   <div class="swiper-wrapper">
     <!-- Slides -->
-
     {%- for drink in site.data.drinks -%}
       {% include slide.html drink=drink %}
     {%- endfor -%}
 
   </div>
 </div>
+
+<script>
+  var drinks = JSON.parse('{{ site.data.drinks | jsonify  }}');
+</script>
