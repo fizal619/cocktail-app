@@ -1,0 +1,24 @@
+{
+  "background_color": "#1141a0",
+  "description": "Common drink recipes to help bartenders out.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Drinkle",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "Drinkle",
+  "start_url": "/",
+  "theme_color": "#b70233",
+  "categories": [
+    "lifestyle",
+    "social"
+  ],
+  "screenshots": [],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🍸&lt;/text&gt;&lt;/svg&gt;"
+    }
+  ],
+  "shortcuts": [],
+  "id": "me.fizal.drinkle"
+}
