@@ -119,5 +119,5 @@ setTimeout(()=> {
 
 // for PWA use
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register("/serviceworker.js");
+  navigator.serviceWorker.register("/js/serviceworker.js");
 }
