@@ -90,7 +90,7 @@ function rehydrate(shortname, reset) {
     drinkObj = drinks.find(d=>d.shortname == shortname);
   }
 
-  console.log(drinkObj);
+  // console.log(drinkObj);
 
   if (drinkObj) {
     nameEL.textContent = drinkObj.name;
@@ -106,3 +106,13 @@ function rehydrate(shortname, reset) {
 document.querySelectorAll(".card").forEach(el => {
   rehydrate(el.dataset.shortname);
 });
+
+//clean up intro animations
+setTimeout(()=> {
+  const elements = document.querySelectorAll(".animate-in-1, .animate-in-2");
+  // console.log('elements :>> ', elements);
+  elements.forEach(el => {
+    el.classList.remove("animate-in-1");
+    el.classList.remove("animate-in-2");
+  });
+}, 3000);

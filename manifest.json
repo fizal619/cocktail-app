@@ -14,7 +14,7 @@
     }
   ],
   "id": "/?source=pwa",
-  "start_url": "/?source=pwa",
+  "start_url": "https://drinkle.fizal.me",
   "background_color": "#0048D7",
   "display": "standalone",
   "orientation": "portrait",

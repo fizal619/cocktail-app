@@ -1,7 +1,7 @@
 
 <div class="swiper-slide">
   <div class="scene">
-    <div data-shortname="{{ drink.shortname }}" class="card">
+    <div data-shortname="{{ drink.shortname }}" class="card animate-in-1">
       <div class="card__face card__face--front">
         <h3 id="{{ drink.shortname }}_name">{{ drink.name }}</h3>
         <hr>
@@ -39,13 +39,13 @@
   </div>
   <div class="actions">
     <button
-      class="btn btn-edit"
+      class="btn btn-edit animate-in-2"
       onclick="editCard('{{ drink.shortname }}')"
     >
       Edit
     </button>
     <button
-      class="btn btn-reset"
+      class="btn btn-reset animate-in-2"
       onclick="resetCard('{{ drink.shortname }}')"
     >
       Reset
