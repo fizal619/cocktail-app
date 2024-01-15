@@ -116,3 +116,8 @@ setTimeout(()=> {
     el.classList.remove("animate-in-2");
   });
 }, 3000);
+
+// for PWA use
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register("/serviceworker.js");
+}
