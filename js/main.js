@@ -38,8 +38,8 @@ function editCard(shortname) {
   const modal = new tingle.modal({
     footer: true,
     stickyFooter: false,
-    closeMethods: [],
-    closeLabel: "Save and Close",
+    closeMethods: ["button", "overlay"],
+    closeLabel: "Cancel",
     footer: true
   });
 

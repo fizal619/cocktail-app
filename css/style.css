@@ -232,3 +232,13 @@ input[type=text]:focus, textarea:focus {
   cursor: pointer;
   transform: scale(0.95);
 }
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width:1025px)  {
+  .desktop-only {
+    display: block;
+  }
+}
