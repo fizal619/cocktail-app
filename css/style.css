@@ -18,7 +18,8 @@ body {
 }
 
 .header h1 {
-  margin: 0;
+  float: left;
+  margin: 0 20px;
   font-size: 60px;
   letter-spacing: 3px;
   font-weight: bold;
@@ -81,6 +82,9 @@ body {
   margin: 0 auto;
   text-align: center;
   font-smooth: none;
+  opacity: 0;
+  animation: bounceIn 1s forwards;
+  animation-delay: 0.5s;
 }
 
 .card__face {
@@ -218,6 +222,9 @@ input[type=text]:focus, textarea:focus {
   border-radius: 5px;
   font-weight: bold;
   width: 120px;
+  opacity: 0;
+  animation: bounceIn 1s forwards;
+  animation-delay: 1.3s;
 }
 
 .btn-edit {
@@ -231,6 +238,51 @@ input[type=text]:focus, textarea:focus {
 .btn:hover {
   cursor: pointer;
   transform: scale(0.95);
+}
+
+.about-container {
+  background: aliceblue;
+  margin: 50px auto;
+  padding: 50px;
+  border-radius: 5px;
+  font-size: 20px;
+  line-height: 30px;
+}
+
+.about-container h3 {
+  font-size: 30px;
+  line-height: 55px;
+}
+
+.menu {
+  float: right;
+  margin: 15px 20px;
+  filter: drop-shadow(0.5px 1px 1px #000);
+  opacity: 0;
+  animation: bounceIn 1s forwards;
+  border-radius: 50%;
+}
+
+.menu .btn-menu {
+  font-size: 25px;
+  text-decoration: none;
+  z-index: 3;
+}
+
+.btn-menu:hover {
+  transform: scale(.95);
+  transform-origin: center;
+  cursor: pointer;
+}
+
+a.btn {
+  text-decoration: none;
+  color: black;
+}
+
+a.btn:visited {
+  text-decoration: none;
+  color: black;
 }
 
 .desktop-only {
