@@ -44,7 +44,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --state open \
             --json number,title,labels,author \
-            --jq --argjson trusted "$trusted" \
+            | jq --argjson trusted "$trusted" \
             '[.[] | select((.labels | map(.name) | index("claude-working") | not) and (.author.login as $a | $trusted | index($a)))]')
 
           count=$(echo "$issues" | jq length)
