@@ -1,0 +1,250 @@
+name: "Claude: Developer"
+
+on:
+  issues:
+    types: [opened]
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+
+concurrency:
+  group: claude-developer
+  cancel-in-progress: false
+
+jobs:
+  # ── Discover issues that haven't been picked up yet ──────────────────
+  find-issues:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scan.outputs.matrix }}
+      has_issues: ${{ steps.scan.outputs.has_issues }}
+    steps:
+      - name: Ensure tracking label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "claude-working" \
+            --color "D4A017" \
+            --description "Claude is implementing this issue" \
+            --repo "${{ github.repository }}" 2>/dev/null || true
+
+      - name: Scan for unprocessed issues
+        id: scan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          trusted='["fizal619","plantainchip","saeedjabbar"]'
+          issues=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --json number,title,labels,author \
+            --jq --argjson trusted "$trusted" \
+            '[.[] | select((.labels | map(.name) | index("claude-working") | not) and (.author.login as $a | $trusted | index($a)))]')
+
+          count=$(echo "$issues" | jq length)
+
+          if [ "$count" -eq 0 ]; then
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"issue\":[]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+            echo "matrix=$(echo "$issues" | jq -c '{issue: [.[].number]}')" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Implement each issue as a pull request ───────────────────────────
+  implement:
+    needs: find-issues
+    if: >-
+      needs.find-issues.outputs.has_issues == 'true'
+      && (github.event_name != 'issues' || contains(fromJson('["fizal619","plantainchip","saeedjabbar"]'), github.actor))
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.find-issues.outputs.matrix) }}
+      max-parallel: 1
+      fail-fast: false
+    env:
+      ISSUE: ${{ matrix.issue }}
+      DISPLAY: ":99"
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Mark the issue so it won't be picked up again ──
+      - name: Label issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE" \
+            --add-label "claude-working" \
+            --repo "${{ github.repository }}"
+
+      - name: Fetch issue details
+        id: issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue view "$ISSUE" \
+            --repo "${{ github.repository }}" \
+            --json title,body > /tmp/issue.json
+          echo "title=$(jq -r .title /tmp/issue.json)" >> "$GITHUB_OUTPUT"
+
+      # ── Toolchain ──
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            chromium-browser xvfb ffmpeg
+
+      - name: Start virtual display
+        run: Xvfb :99 -screen 0 1280x720x24 &
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Create branch
+        run: git checkout -b "claude/issue-${ISSUE}"
+
+      # ── Let Claude implement the issue ──
+      - name: Run Claude Code
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ISSUE_TITLE=$(jq -r .title /tmp/issue.json)
+          ISSUE_BODY=$(jq -r .body /tmp/issue.json)
+
+          claude -p "$(cat <<PROMPT
+          You are a developer working on issue #${ISSUE} in this repository.
+
+          ## Issue
+          **${ISSUE_TITLE}**
+
+          ${ISSUE_BODY}
+
+          ## Your workflow
+
+          1. Read CLAUDE.md to understand the project.
+          2. Read the relevant source files — understand the code before changing it.
+          3. Implement the fix or feature with minimal, focused changes.
+          4. Write acceptance tests in test/ that prove your changes work.
+          5. Run the full test suite and fix any failures:
+                bundle exec ruby test/drinks_test.rb
+                bundle exec jekyll build
+                bundle exec htmlproofer _site --disable-external
+          6. Build and serve the site, then record a demo:
+                bundle exec jekyll serve --host 0.0.0.0 &
+                sleep 4
+                mkdir -p recordings screenshots
+                ffmpeg -y -f x11grab -video_size 1280x720 -framerate 15 -i :99 \
+                  -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+                  recordings/issue-${ISSUE}.mp4 &
+                echo \$! > /tmp/ffmpeg.pid
+             Then use the chrome-devtools MCP to navigate to http://localhost:4000
+             and interact with the app — demonstrate the change working.
+             Spend 10+ seconds navigating: swipe cards, flip them, open modals,
+             whatever is relevant to the issue.
+             Then stop recording:
+                kill \$(cat /tmp/ffmpeg.pid) || true
+                sleep 2
+          7. Also take screenshots via the chrome-devtools MCP and save them
+             to the screenshots/ directory.
+          8. If this change needs ongoing CI validation, create a workflow
+             in .github/workflows/.
+          9. Stage and commit everything (code, tests, recordings, screenshots)
+             with a message referencing #${ISSUE}.
+
+          ## Rules
+          - Minimal changes — do not refactor unrelated code.
+          - Every code change needs a test.
+          - You MUST produce at least one recording AND one screenshot.
+          - Do NOT push or create a pull request.
+          PROMPT
+          )" \
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(bundle exec:*),Bash(mkdir:*),Bash(ls:*),Bash(git add:*),Bash(git commit:*),Bash(git status:*),Bash(kill:*),Bash(ffmpeg:*),Bash(sleep:*),Bash(echo:*),Bash(cat:*),Bash(cp:*),mcp__chrome-devtools__navigate,mcp__chrome-devtools__screenshot,mcp__chrome-devtools__evaluate"
+
+      # ── Upload artifacts & create PR ──
+      - name: Upload recordings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recordings-issue-${{ matrix.issue }}
+          path: recordings/
+          if-no-files-found: ignore
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-issue-${{ matrix.issue }}
+          path: screenshots/
+          if-no-files-found: ignore
+
+      - name: Push and open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Bail if Claude made no changes
+          if git diff --quiet HEAD; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git push -u origin "claude/issue-${ISSUE}"
+
+          artifacts_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+
+          # Inline committed screenshots
+          screenshot_md=""
+          for img in screenshots/*.png; do
+            [ -f "$img" ] || continue
+            screenshot_md="${screenshot_md}
+          ![$(basename "$img")](${img})"
+          done
+
+          gh pr create \
+            --title "resolve #${ISSUE}: ${{ steps.issue.outputs.title }}" \
+            --body "$(cat <<EOF
+          ## Summary
+
+          Implementation for #${ISSUE}.
+
+          Closes #${ISSUE}
+
+          ## Demo recording
+
+          A video walkthrough is attached as a workflow artifact:
+          **[Download recording](${artifacts_url})**
+
+          ## Screenshots
+          ${screenshot_md:-_No screenshots captured._}
+
+          ## Validation
+
+          - [ ] Existing tests pass
+          - [ ] New acceptance tests cover the changes
+          - [ ] Recording demonstrates the feature/fix
+          EOF
+          )" \
+            --repo "${{ github.repository }}"
+
+      - name: Unlabel on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE" \
+            --remove-label "claude-working" \
+            --repo "${{ github.repository }}"

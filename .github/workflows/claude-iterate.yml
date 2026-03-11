@@ -1,0 +1,182 @@
+name: "Claude: Iterate"
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  iterate:
+    # Only act on "changes requested" reviews for Claude-created PRs
+    if: >-
+      github.event.review.state == 'changes_requested'
+      && startsWith(github.event.pull_request.head.ref, 'claude/issue-')
+    runs-on: ubuntu-latest
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      BRANCH: ${{ github.event.pull_request.head.ref }}
+      DISPLAY: ":99"
+    steps:
+      - name: Check iteration cap
+        id: cap
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rounds=$(gh api \
+            "repos/${{ github.repository }}/pulls/${PR}/reviews" \
+            --jq '[.[] | select(.state == "CHANGES_REQUESTED")] | length')
+
+          echo "rounds=${rounds}" >> "$GITHUB_OUTPUT"
+
+          if [ "$rounds" -ge 3 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+
+            gh label create "needs-human-review" \
+              --color "D93F0B" \
+              --description "Claude hit the iteration cap — a human should review" \
+              --repo "${{ github.repository }}" 2>/dev/null || true
+
+            gh pr edit "$PR" \
+              --add-label "needs-human-review" \
+              --repo "${{ github.repository }}"
+
+            gh pr comment "$PR" \
+              --body "This PR has gone through **${rounds} review rounds** without approval. Handing off to a human reviewer." \
+              --repo "${{ github.repository }}"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cap.outputs.skip == 'false'
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.cap.outputs.skip == 'false'
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        if: steps.cap.outputs.skip == 'false'
+        with:
+          node-version: "20"
+
+      - name: Install system packages
+        if: steps.cap.outputs.skip == 'false'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            chromium-browser xvfb ffmpeg
+
+      - name: Start virtual display
+        if: steps.cap.outputs.skip == 'false'
+        run: Xvfb :99 -screen 0 1280x720x24 &
+
+      - name: Install Claude Code
+        if: steps.cap.outputs.skip == 'false'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Gather review feedback
+        if: steps.cap.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the review that triggered this workflow
+          echo "${{ github.event.review.body }}" > /tmp/review_feedback.md
+
+          # Get all review comments (inline comments)
+          gh api \
+            "repos/${{ github.repository }}/pulls/${PR}/comments" \
+            --jq '.[] | "**\(.path):\(.line // .original_line)** — \(.body)"' \
+            > /tmp/review_comments.md 2>/dev/null || true
+
+          # Get the linked issue
+          issue_number=$(echo "$BRANCH" | sed 's/claude\/issue-//')
+          gh issue view "$issue_number" \
+            --repo "${{ github.repository }}" \
+            --json title,body > /tmp/issue.json
+
+      - name: Run Claude Code
+        if: steps.cap.outputs.skip == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ISSUE_TITLE=$(jq -r .title /tmp/issue.json)
+          ISSUE_BODY=$(jq -r .body /tmp/issue.json)
+          REVIEW_BODY=$(cat /tmp/review_feedback.md)
+          REVIEW_COMMENTS=$(cat /tmp/review_comments.md 2>/dev/null || echo "None")
+          ROUND=${{ steps.cap.outputs.rounds }}
+          ISSUE_NUM=$(echo "$BRANCH" | sed 's/claude\/issue-//')
+
+          claude -p "$(cat <<PROMPT
+          You are a developer iterating on PR #${PR} (round $((ROUND + 1)) of review).
+
+          ## Original issue #${ISSUE_NUM}
+          **${ISSUE_TITLE}**
+
+          ${ISSUE_BODY}
+
+          ## Review feedback
+
+          ${REVIEW_BODY}
+
+          ## Inline comments
+
+          ${REVIEW_COMMENTS}
+
+          ## Your task
+
+          1. Read each piece of feedback carefully.
+          2. Address every point — do not skip any.
+          3. Make surgical, targeted changes. Do not refactor beyond what's asked.
+          4. Update or add tests if the review asks for it.
+          5. Run the full test suite:
+                bundle exec ruby test/drinks_test.rb
+                bundle exec jekyll build
+                bundle exec htmlproofer _site --disable-external
+          6. If the reviewer flagged visual/behavioral issues, re-record a demo:
+                bundle exec jekyll serve --host 0.0.0.0 &
+                sleep 4
+                mkdir -p recordings screenshots
+                ffmpeg -y -f x11grab -video_size 1280x720 -framerate 15 -i :99 \
+                  -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+                  recordings/issue-${ISSUE_NUM}-round-$((ROUND + 1)).mp4 &
+                echo \$! > /tmp/ffmpeg.pid
+             Navigate and demonstrate the fix via chrome-devtools MCP,
+             then stop recording:
+                kill \$(cat /tmp/ffmpeg.pid) || true
+                sleep 2
+          7. Commit all changes with a message like:
+             "address review feedback (round $((ROUND + 1))) for #${ISSUE_NUM}"
+
+          ## Rules
+          - Address ALL feedback, not just some of it.
+          - Keep changes minimal and focused on the review comments.
+          - Do NOT push — the pipeline handles that.
+          PROMPT
+          )" \
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(bundle exec:*),Bash(mkdir:*),Bash(ls:*),Bash(git add:*),Bash(git commit:*),Bash(git status:*),Bash(kill:*),Bash(ffmpeg:*),Bash(sleep:*),Bash(echo:*),Bash(cat:*),Bash(cp:*),mcp__chrome-devtools__navigate,mcp__chrome-devtools__screenshot,mcp__chrome-devtools__evaluate"
+
+      - name: Upload recordings
+        if: steps.cap.outputs.skip == 'false' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recordings-pr-${{ env.PR }}-round-${{ steps.cap.outputs.rounds }}
+          path: recordings/
+          if-no-files-found: ignore
+
+      - name: Push changes
+        if: steps.cap.outputs.skip == 'false'
+        run: |
+          if git diff --quiet HEAD; then
+            echo "No changes to push"
+            exit 0
+          fi
+          git push origin "$BRANCH"

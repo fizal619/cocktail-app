@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bundle exec:*)",
+      "Bash(ruby:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(kill:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(sleep:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "mcp__chrome-devtools__evaluate",
+      "mcp__chrome-devtools__navigate",
+      "mcp__chrome-devtools__screenshot"
+    ]
+  },
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--slim",
+        "--executablePath",
+        "/usr/bin/chromium-browser"
+      ],
+      "env": {
+        "DISPLAY": ":99"
+      }
+    }
+  }
+}
