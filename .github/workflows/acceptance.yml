@@ -1,0 +1,90 @@
+name: Acceptance Tests
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run acceptance tests
+        run: npx playwright test
+
+      - name: Merge test videos into one MP4
+        if: always()
+        run: |
+          mkdir -p recordings
+          # Collect all webm videos Playwright recorded
+          videos=$(find test-results -name "*.webm" 2>/dev/null)
+          if [ -z "$videos" ]; then
+            echo "No videos found"
+            exit 0
+          fi
+
+          # Create a concat list for ffmpeg
+          for v in $videos; do
+            echo "file '$PWD/$v'" >> /tmp/videos.txt
+          done
+
+          # If single video just convert, otherwise concat
+          count=$(echo "$videos" | wc -l)
+          if [ "$count" -eq 1 ]; then
+            ffmpeg -y -i $(echo "$videos" | head -1) \
+              -c:v libx264 -preset fast -pix_fmt yuv420p \
+              recordings/acceptance-tests.mp4
+          else
+            ffmpeg -y -f concat -safe 0 -i /tmp/videos.txt \
+              -c:v libx264 -preset fast -pix_fmt yuv420p \
+              recordings/acceptance-tests.mp4
+          fi
+
+      - name: Upload recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-recording
+          path: recordings/acceptance-tests.mp4
+          if-no-files-found: ignore
+
+      - name: Comment on PR with recording link
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+          # Delete previous bot comment if re-running
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | contains("Acceptance Test Recording")) | .id' \
+            | xargs -I{} gh api -X DELETE "repos/${{ github.repository }}/issues/comments/{}" 2>/dev/null || true
+
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "$(cat <<EOF
+          ## Acceptance Test Recording
+
+          **[Download MP4](${run_url})**
+
+          Tests ran on commit ${{ github.event.pull_request.head.sha }}.
+          EOF
+          )"
