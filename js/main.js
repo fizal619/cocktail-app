@@ -69,11 +69,10 @@ function buildSlideHTML(drink, isCustom) {
 
 function addCardSlide(drink, isCustom) {
   swiper.appendSlide(buildSlideHTML(drink, isCustom));
-  const allCards = document.querySelectorAll(`[data-shortname="${drink.shortname}"]`);
-  const card = Array.from(allCards).find(el => !el.closest('.swiper-slide-duplicate'));
-  if (card) {
-    card.addEventListener('click', () => card.classList.toggle('is-flipped'));
-  }
+  // Rebuild loop duplicates so the new slide is reachable via swipe navigation
+  swiper.loopDestroy();
+  swiper.loopCreate();
+  swiper.update();
   rehydrate(drink.shortname);
 }
 
@@ -86,11 +85,14 @@ function deleteCustomCard(shortname) {
   const customCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
   localStorage.setItem('custom_cards', JSON.stringify(customCards.filter(d => d.shortname !== shortname)));
 
-  const card = document.querySelector(`.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate) [data-shortname="${shortname}"]`);
-  if (card) {
-    const slide = card.closest('.swiper-slide');
-    const index = Array.from(document.querySelectorAll('.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate)')).indexOf(slide);
-    if (index !== -1) swiper.removeSlide(index);
+  const realSlides = Array.from(document.querySelectorAll('.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate)'));
+  const slide = realSlides.find(s => s.querySelector(`[data-shortname="${shortname}"]`));
+  if (slide) {
+    const index = realSlides.indexOf(slide);
+    swiper.removeSlide(index);
+    swiper.loopDestroy();
+    swiper.loopCreate();
+    swiper.update();
   }
 }
 
@@ -153,6 +155,9 @@ function createCard() {
     localStorage.setItem('custom_cards', JSON.stringify(customCards));
 
     addCardSlide(newDrink, true);
+    // Navigate to the newly created card
+    const realSlides = document.querySelectorAll('.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate)');
+    swiper.slideToLoop(realSlides.length - 1, 400);
     modal.close();
   });
 
@@ -160,10 +165,10 @@ function createCard() {
 }
 
 
-document.querySelectorAll(".card").forEach(card => {
-  card.addEventListener("click", e => {
-    card.classList.toggle("is-flipped");
-  });
+// Use event delegation so loop-duplicate slides and dynamically added cards all flip correctly
+document.querySelector('.swiper-wrapper').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (card) card.classList.toggle('is-flipped');
 });
 
 function resetCard(shortname) {

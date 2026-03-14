@@ -25,6 +25,4 @@ title: DRINKLE
   var drinks = JSON.parse('{{ site.data.drinks | jsonify  }}');
 </script>
 
-<div class="new-card-bar">
-  <button class="btn btn-new" onclick="createCard()">+ New Card</button>
-</div>
+<button class="fab" onclick="createCard()" aria-label="Add new drink card">+</button>

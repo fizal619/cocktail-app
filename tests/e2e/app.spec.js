@@ -28,7 +28,7 @@ test.describe('Page', () => {
   });
 
   test('shows the app header', async ({ page }) => {
-    await expect(page.locator('header')).toContainText('DRINKLE');
+    await expect(page.locator('.header')).toContainText('DRINKLE');
   });
 
   test('renders all 10 drinks in the DOM', async ({ page }) => {
@@ -181,8 +181,11 @@ test.describe('Reset', () => {
 
 test.describe('Persistence', () => {
   test('edited name survives a page reload', async ({ page }) => {
-    await page.addInitScript(() => localStorage.clear());
+    // Use evaluate (not addInitScript) so the clear only happens once,
+    // not again when the page reloads after saving.
     await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
     await expect(page.locator('.swiper-slide-active')).toBeVisible();
 
     await page.locator('.swiper-slide-active .btn-edit').click();
@@ -194,11 +197,13 @@ test.describe('Persistence', () => {
   });
 
   test('reset name does not persist after reload', async ({ page }) => {
-    // Pre-set a custom name in localStorage, then reset it
-    await page.addInitScript((key) => {
+    // Use evaluate (not addInitScript) so the seed only happens once,
+    // not again after reset clears it.
+    await page.goto('/');
+    await page.evaluate((key) => {
       localStorage.setItem(key, JSON.stringify({ name: 'Old Custom', ingredients: [], instruction: '' }));
     }, FIRST.shortname);
-    await page.goto('/');
+    await page.reload();
     await expect(page.locator('.swiper-slide-active')).toBeVisible();
 
     await page.locator('.swiper-slide-active .btn-reset').click();
