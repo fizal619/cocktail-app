@@ -1,0 +1,138 @@
+name: Claude Code - Handle Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  handle:
+    if: github.event.issue.user.login == 'fizal619'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure git
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+      - name: Create branch
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: git checkout -b "claude/issue-${ISSUE_NUMBER}"
+
+      - name: Write prompt
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          python3 - << 'PYEOF'
+          import os
+
+          issue_num = os.environ['ISSUE_NUMBER']
+          title = os.environ['ISSUE_TITLE']
+          body = os.environ['ISSUE_BODY']
+
+          prompt = f"""You are implementing a feature request for Drinkle, a Jekyll-based PWA for ordering cocktails silently by showing cards to a bartender.
+
+          Start by reading CLAUDE.md to understand the project structure, then implement the changes requested in the following GitHub issue.
+
+          Issue #{issue_num}: {title}
+
+          {body}
+
+          After making your changes, do NOT run git commands or create a PR — the CI workflow handles that.
+          Make sure all changes are consistent with the existing code style and architecture described in CLAUDE.md."""
+
+          with open('/tmp/claude-prompt.txt', 'w') as f:
+              f.write(prompt)
+          PYEOF
+
+      - name: Run Claude Code (streaming)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import subprocess, json, sys
+
+          with open('/tmp/claude-prompt.txt') as f:
+              prompt = f.read()
+
+          proc = subprocess.Popen(
+              [
+                  'claude',
+                  '--print', prompt,
+                  '--output-format', 'stream-json',
+                  '--dangerouslySkipPermissions',
+                  '--allowedTools', 'Read,Write,Edit,Glob,Grep,Bash',
+              ],
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+              text=True,
+              bufsize=1,
+          )
+
+          for raw in proc.stdout:
+              raw = raw.strip()
+              if not raw:
+                  continue
+              try:
+                  data = json.loads(raw)
+                  t = data.get('type', '')
+                  if t == 'assistant':
+                      for block in data.get('message', {}).get('content', []):
+                          if block.get('type') == 'text' and block['text'].strip():
+                              print(block['text'], flush=True)
+                          elif block.get('type') == 'tool_use':
+                              inp = block.get('input', {})
+                              detail = inp.get('file_path') or inp.get('command') or inp.get('pattern') or ''
+                              print(f"  [tool: {block['name']}] {detail}", flush=True)
+                  elif t == 'result':
+                      print(f"[done — {data.get('subtype', '')}]", flush=True)
+                  elif t == 'system':
+                      print(f"[system] {data.get('subtype', '')}", flush=True)
+              except json.JSONDecodeError:
+                  print(raw, flush=True)
+
+          proc.wait()
+          sys.exit(proc.returncode)
+          PYEOF
+
+      - name: Commit and push
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Implement #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+          git push origin "claude/issue-${ISSUE_NUMBER}"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          gh pr create \
+            --title "Fix #${ISSUE_NUMBER}: ${ISSUE_TITLE}" \
+            --body "$(printf 'Automated implementation by Claude Code.\n\nCloses #%s' "${ISSUE_NUMBER}")" \
+            --base master \
+            --head "claude/issue-${ISSUE_NUMBER}"
