@@ -4,6 +4,161 @@ const swiper = new Swiper('.swiper', {
   loop: true,
 });
 
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildSlideHTML(drink, isCustom) {
+  const imgSrc = isCustom
+    ? `/assets/${escapeHTML(drink.image_shortname)}.png`
+    : `/assets/${escapeHTML(drink.shortname)}.png`;
+  const ingredientsHTML = (drink.ingredients || [])
+    .map(i => `<li>${escapeHTML(i)}</li>`)
+    .join('\n');
+  const actionBtn = isCustom
+    ? `<button class="btn btn-delete" onclick="deleteCustomCard('${escapeHTML(drink.shortname)}')">Delete</button>`
+    : `<button class="btn btn-reset animate-in-2" onclick="resetCard('${escapeHTML(drink.shortname)}')">Reset</button>`;
+
+  return `
+    <div class="swiper-slide">
+      <div class="scene">
+        <div data-shortname="${escapeHTML(drink.shortname)}" class="card">
+          <div class="card__face card__face--front">
+            <h3 id="${escapeHTML(drink.shortname)}_name">${escapeHTML(drink.name)}</h3>
+            <hr>
+            <img
+              id="${escapeHTML(drink.shortname)}_image"
+              src="${imgSrc}"
+              onerror="this.src='https://placehold.co/400x400?text=placeholder'"
+              alt="drink"
+            />
+            <hr>
+            <div class="ingredients">
+              <ul id="${escapeHTML(drink.shortname)}_ingredients">
+                ${ingredientsHTML}
+              </ul>
+            </div>
+            <div class="instructions">
+              <p id="${escapeHTML(drink.shortname)}_instructions">${escapeHTML(drink.instruction || '')}</p>
+            </div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="v-center">
+              <img
+                id="${escapeHTML(drink.shortname)}_image_back"
+                src="${imgSrc}"
+                onerror="this.src='https://placehold.co/400x400?text=placeholder'"
+                alt="Picture of ${escapeHTML(drink.name)}"
+              />
+              <h3 id="${escapeHTML(drink.shortname)}_name_back">${escapeHTML(drink.name)}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-edit" onclick="editCard('${escapeHTML(drink.shortname)}')">Edit</button>
+        ${actionBtn}
+      </div>
+    </div>
+  `;
+}
+
+function addCardSlide(drink, isCustom) {
+  swiper.appendSlide(buildSlideHTML(drink, isCustom));
+  const allCards = document.querySelectorAll(`[data-shortname="${drink.shortname}"]`);
+  const card = Array.from(allCards).find(el => !el.closest('.swiper-slide-duplicate'));
+  if (card) {
+    card.addEventListener('click', () => card.classList.toggle('is-flipped'));
+  }
+  rehydrate(drink.shortname);
+}
+
+function loadCustomCards() {
+  const customCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
+  customCards.forEach(drink => addCardSlide(drink, true));
+}
+
+function deleteCustomCard(shortname) {
+  const customCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
+  localStorage.setItem('custom_cards', JSON.stringify(customCards.filter(d => d.shortname !== shortname)));
+
+  const card = document.querySelector(`.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate) [data-shortname="${shortname}"]`);
+  if (card) {
+    const slide = card.closest('.swiper-slide');
+    const index = Array.from(document.querySelectorAll('.swiper-wrapper > .swiper-slide:not(.swiper-slide-duplicate)')).indexOf(slide);
+    if (index !== -1) swiper.removeSlide(index);
+  }
+}
+
+function createCard() {
+  const imagePicker = drinks.map((d, i) => `
+    <label class="image-picker-item">
+      <input type="radio" name="card_image" value="${escapeHTML(d.shortname)}" ${i === 0 ? 'checked' : ''}>
+      <img src="/assets/${escapeHTML(d.shortname)}.png" onerror="this.src='https://placehold.co/80x80?text=?'" alt="${escapeHTML(d.shortname)}">
+      <span>${escapeHTML(d.name)}</span>
+    </label>
+  `).join('');
+
+  const modal = new tingle.modal({
+    footer: true,
+    stickyFooter: false,
+    closeMethods: ['button', 'overlay'],
+    closeLabel: 'Cancel',
+  });
+
+  modal.setContent(`
+    <br>
+    <h2 style="font-size:28px;font-weight:bold;margin-bottom:8px;">New Recipe Card</h2>
+    <br>
+    <p>Name:</p><br>
+    <input type="text" id="new_card_name" placeholder="e.g. Aperol Spritz" />
+    <br><br>
+    <p>Ingredients (one per line):</p><br>
+    <textarea id="new_card_ingredients" rows="4" placeholder="3 oz Aperol&#10;3 oz Prosecco&#10;Splash of soda"></textarea>
+    <br><br>
+    <p>Instructions:</p><br>
+    <input type="text" id="new_card_instructions" placeholder="e.g. Stir and garnish with orange" />
+    <br><br>
+    <p>Pick an image:</p>
+    <div class="image-picker">
+      ${imagePicker}
+    </div>
+    <br>
+  `);
+
+  modal.addFooterBtn('Create Card', 'tingle-btn', () => {
+    const name = document.getElementById('new_card_name').value.trim();
+    const ingredientsRaw = document.getElementById('new_card_ingredients').value.trim();
+    const instruction = document.getElementById('new_card_instructions').value.trim();
+    const selectedImage = document.querySelector('input[name="card_image"]:checked');
+    const image_shortname = selectedImage ? selectedImage.value : drinks[0].shortname;
+
+    if (!name) {
+      alert('Please enter a cocktail name.');
+      return;
+    }
+
+    const ingredients = ingredientsRaw
+      ? ingredientsRaw.split('\n').map(s => s.trim()).filter(s => s)
+      : [];
+    const shortname = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now();
+    const newDrink = { shortname, name, ingredients, instruction, image_shortname };
+
+    const customCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
+    customCards.push(newDrink);
+    localStorage.setItem('custom_cards', JSON.stringify(customCards));
+
+    addCardSlide(newDrink, true);
+    modal.close();
+  });
+
+  modal.open();
+}
+
 
 document.querySelectorAll(".card").forEach(card => {
   card.addEventListener("click", e => {
@@ -116,6 +271,9 @@ setTimeout(()=> {
     el.classList.remove("animate-in-2");
   });
 }, 3000);
+
+// Load any custom cards created by the user
+loadCustomCards();
 
 // for PWA use
 if ('serviceWorker' in navigator) {
