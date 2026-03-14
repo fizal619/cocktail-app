@@ -45,24 +45,23 @@ jobs:
           EVENT_BODY: ${{ github.event.issue.body }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            gh issue view "$DISPATCH_NUMBER" --json number,title,body \
-              | python3 -c "
-import json, sys, os
-issue = json.load(sys.stdin)
-with open(os.environ['GITHUB_ENV'], 'a') as f:
-    f.write(f'ISSUE_NUMBER={issue[\"number\"]}\n')
-    f.write(f'ISSUE_TITLE={issue[\"title\"]}\n')
-    f.write('ISSUE_BODY<<__EOF__\n' + issue['body'] + '\n__EOF__\n')
-"
+            gh issue view "$DISPATCH_NUMBER" --json number,title,body > /tmp/issue.json
           else
-            {
-              echo "ISSUE_NUMBER=${EVENT_NUMBER}"
-              echo "ISSUE_TITLE=${EVENT_TITLE}"
-              echo "ISSUE_BODY<<__EOF__"
-              echo "${EVENT_BODY}"
-              echo "__EOF__"
-            } >> "$GITHUB_ENV"
+            python3 -c "
+import json, os
+with open('/tmp/issue.json', 'w') as f:
+    json.dump({'number': int(os.environ['EVENT_NUMBER']), 'title': os.environ['EVENT_TITLE'], 'body': os.environ['EVENT_BODY']}, f)
+"
           fi
+          python3 - << 'PYEOF'
+          import json, os
+          with open('/tmp/issue.json') as f:
+              issue = json.load(f)
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"ISSUE_NUMBER={issue['number']}\n")
+              f.write(f"ISSUE_TITLE={issue['title']}\n")
+              f.write('ISSUE_BODY<<__EOF__\n' + (issue['body'] or '') + '\n__EOF__\n')
+          PYEOF
 
       - name: Create branch
         run: git checkout -b "claude/issue-${ISSUE_NUMBER}"
