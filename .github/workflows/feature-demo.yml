@@ -1,0 +1,160 @@
+name: Claude Feature Demo
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          pip install anthropic --quiet
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Get PR diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git diff "$BASE_SHA...$HEAD_SHA" > /tmp/pr.diff
+
+      - name: Generate demo script with Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import anthropic, os, re
+
+          with open('/tmp/pr.diff') as f:
+              diff = f.read()
+          if len(diff) > 8000:
+              diff = diff[:8000] + '\n[diff truncated]'
+
+          with open('tests/e2e/app.spec.js') as f:
+              existing = f.read()
+
+          client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
+
+          message = client.messages.create(
+              model='claude-sonnet-4-6',
+              max_tokens=2048,
+              messages=[{
+                  'role': 'user',
+                  'content': f"""Write a Playwright script that visually demonstrates the feature introduced in this PR for Drinkle — a Jekyll PWA where users silently order cocktails by showing drink cards to a bartender.
+
+          ## PR Diff
+          ```diff
+          {diff}
+          ```
+
+          ## Existing test patterns (for reference)
+          ```javascript
+          {existing[:2000]}
+          ```
+
+          ## Requirements
+          - Use CommonJS: `const {{ test, expect }} = require('@playwright/test');`
+          - `baseURL` is `http://localhost:4000` — already set in the Playwright config, just use `page.goto('/')`
+          - Add `await page.waitForTimeout(800)` pauses between steps so the video recording is easy to follow
+          - Add a `// Step N:` comment before each action so the purpose is clear in the video
+          - Navigate to and interact with whatever the PR changes — if the diff adds a new drink, show that drink card; if it changes UI, demonstrate the before/after interaction
+          - If the diff has no clear UI surface (e.g. CI config, docs), write a general walkthrough: load the page, flip the first card, open the edit modal, change the name, save, then reset
+          - Swiper loop mode duplicates slides — always use `.first()` when selecting by ID (e.g. `page.locator('#martini_name').first()`)
+          - The active slide is `.swiper-slide-active`; use it for button clicks
+          - Output ONLY valid JavaScript — no markdown fences, no explanation"""
+              }]
+          )
+
+          script = message.content[0].text.strip()
+          # Strip markdown fences if Claude included them anyway
+          script = re.sub(r'^```[a-z]*\n', '', script)
+          script = re.sub(r'\n```$', '', script)
+
+          print('=== Generated demo script ===')
+          print(script)
+          print('=== End of script ===')
+
+          with open('tests/e2e/feature-demo.spec.js', 'w') as f:
+              f.write(script)
+          PYEOF
+
+      - name: Run demo and record video
+        run: npx playwright test --config playwright.demo.config.js
+
+      - name: Convert video to GIF
+        if: always()
+        run: |
+          VIDEO=$(find test-results -name '*.webm' | head -1)
+          if [ -n "$VIDEO" ]; then
+            ffmpeg -i "$VIDEO" \
+              -vf "fps=10,scale=1280:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+              -loop 0 test-results/demo.gif -y -loglevel error
+            echo "GIF_CREATED=true" >> "$GITHUB_ENV"
+          else
+            echo "GIF_CREATED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Upload demo artifacts
+        if: always()
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-demo
+          path: |
+            test-results/
+            playwright-demo-report/
+          retention-days: 14
+
+      - name: Publish to Checks tab
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Feature Demo
+          path: test-results/demo-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Post PR comment with demo link
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "$(cat << 'EOF'
+          ## Feature Demo Recording
+
+          Claude generated a Playwright walkthrough of this PR's changes and recorded it.
+
+          **[Download recording + HTML report]($ARTIFACT_URL)**
+
+          The artifact contains:
+          - \`test-results/demo.gif\` — animated preview of the demo
+          - \`test-results/*.webm\` — full quality video recording
+          - \`playwright-demo-report/\` — interactive HTML report
+
+          > _Script generated by Claude based on the PR diff. See the **Feature Demo** entry in the Checks tab for pass/fail details._
+          EOF
+          )"

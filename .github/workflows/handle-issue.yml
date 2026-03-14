@@ -3,12 +3,6 @@ name: Claude Code - Handle Issue
 on:
   issues:
     types: [opened]
-  workflow_dispatch:
-    inputs:
-      issue_number:
-        description: Issue number to process
-        required: true
-        type: number
 
 jobs:
   handle:
