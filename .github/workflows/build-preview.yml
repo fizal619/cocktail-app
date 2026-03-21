@@ -1,0 +1,49 @@
+name: Build Preview
+
+on:
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Build site
+        run: bundle exec jekyll build
+
+      - name: Upload build artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-preview
+          path: _site/
+          retention-days: 14
+
+      - name: Comment on PR with artifact link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          ARTIFACT_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}/artifacts"
+          BODY="## 📦 Build Preview
+
+          The site has been built and uploaded as an artifact.
+
+          **[Download site-preview artifact](${ARTIFACT_URL})**
+
+          Extract the zip and open \`index.html\` to preview the build locally.
+
+          > _Built from commit ${{ github.event.pull_request.head.sha }}_"
+          gh pr comment "$PR_NUMBER" --body "$BODY"
