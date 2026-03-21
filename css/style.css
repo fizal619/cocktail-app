@@ -311,6 +311,25 @@ a.btn:visited {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
 }
 
+.fab-notes {
+  bottom: 100px;
+  background: #0048D7;
+  font-size: 28px;
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 200px;
+  font-size: 18px;
+  padding: 12px;
+  border-radius: 4px;
+  border: 2px solid #ccc;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: sans-serif;
+  line-height: 1.5;
+}
+
 .btn-delete {
   background: #e03030;
   color: white;
