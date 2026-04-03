@@ -24,7 +24,7 @@
 - `git remote add origin <your empty repo clone url>`
 - `git push origin main/master`
 - Turn on github pages
-- Profit 🤑💰
+- Profit 🤑
 
 ![](https://www.gifcen.com/wp-content/uploads/2022/04/bully-maguire-dancing-gif-2.gif)
 
