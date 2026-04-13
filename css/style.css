@@ -311,12 +311,6 @@ a.btn:visited {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
 }
 
-.fab-notes {
-  bottom: 100px;
-  background: #541945;
-  font-size: 28px;
-}
-
 .btn-delete {
   background: #e03030;
   color: white;
