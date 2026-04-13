@@ -164,34 +164,6 @@ function createCard() {
   modal.open();
 }
 
-
-function openNotes() {
-  const saved = localStorage.getItem('drinkle_notes') || '';
-
-  const modal = new tingle.modal({
-    footer: true,
-    stickyFooter: false,
-    closeMethods: ['button', 'overlay'],
-    closeLabel: 'Cancel',
-  });
-
-  modal.setContent(`
-    <br>
-    <h2 style="font-size:28px;font-weight:bold;margin-bottom:8px;">Notes</h2>
-    <br>
-    <textarea id="notes_textarea" rows="10" placeholder="Write your notes here...">${escapeHTML(saved)}</textarea>
-    <br>
-  `);
-
-  modal.addFooterBtn('Save and Close', 'tingle-btn', () => {
-    const text = document.getElementById('notes_textarea').value;
-    localStorage.setItem('drinkle_notes', text);
-    modal.close();
-  });
-
-  modal.open();
-}
-
 // Use event delegation so loop-duplicate slides and dynamically added cards all flip correctly
 document.querySelector('.swiper-wrapper').addEventListener('click', e => {
   const card = e.target.closest('.card');
