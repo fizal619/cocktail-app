@@ -12,8 +12,47 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Upload limits for user-supplied drink pictures
+const MAX_IMAGE_BYTES = 100 * 1024; // 100 KB
+const MAX_IMAGE_DIMENSION = 256; // 256 x 256 px
+
+// Read an uploaded image file, enforcing the size/dimension limits.
+// Resolves with a base64 data URL, or rejects with a user-facing message.
+function readImageUpload(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject('Please choose an image file.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      reject('Image must be smaller than 100KB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject('Could not read that file.');
+    reader.onload = () => {
+      const dataURL = reader.result;
+      const img = new Image();
+      img.onerror = () => reject('That file is not a valid image.');
+      img.onload = () => {
+        if (img.naturalWidth > MAX_IMAGE_DIMENSION || img.naturalHeight > MAX_IMAGE_DIMENSION) {
+          reject('Image must be 256×256 pixels or smaller.');
+          return;
+        }
+        resolve(dataURL);
+      };
+      img.src = dataURL;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function buildSlideHTML(drink, isCustom) {
-  const imgSrc = isCustom
+  // A user-uploaded picture is stored inline as a base64 data URL; otherwise
+  // fall back to a picked/default image file under /assets.
+  const imgSrc = drink.image_data
+    ? drink.image_data
+    : isCustom
     ? `/assets/${escapeHTML(drink.image_shortname)}.png`
     : `/assets/${escapeHTML(drink.shortname)}.png`;
   const ingredientsHTML = (drink.ingredients || [])
@@ -130,7 +169,14 @@ function createCard() {
       ${imagePicker}
     </div>
     <br>
+    <p>Or upload your own (max 100KB, up to 256×256):</p>
+    <input type="file" id="new_card_upload" accept="image/*" />
+    <img id="new_card_upload_preview" class="upload-preview" alt="upload preview" />
+    <br>
   `);
+
+  // Holds the base64 data URL of a user-uploaded picture, if any.
+  let uploadedImageData = null;
 
   modal.addFooterBtn('Create Card', 'tingle-btn', () => {
     const name = document.getElementById('new_card_name').value.trim();
@@ -149,6 +195,8 @@ function createCard() {
       : [];
     const shortname = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now();
     const newDrink = { shortname, name, ingredients, instruction, image_shortname };
+    // An uploaded picture takes precedence over the picked image.
+    if (uploadedImageData) newDrink.image_data = uploadedImageData;
 
     const customCards = JSON.parse(localStorage.getItem('custom_cards') || '[]');
     customCards.push(newDrink);
@@ -162,6 +210,29 @@ function createCard() {
   });
 
   modal.open();
+
+  // Validate and preview uploaded images once the modal content is in the DOM.
+  const uploadInput = document.getElementById('new_card_upload');
+  const uploadPreview = document.getElementById('new_card_upload_preview');
+  uploadInput.addEventListener('change', () => {
+    const file = uploadInput.files[0];
+    if (!file) {
+      uploadedImageData = null;
+      uploadPreview.removeAttribute('src');
+      return;
+    }
+    readImageUpload(file)
+      .then(dataURL => {
+        uploadedImageData = dataURL;
+        uploadPreview.src = dataURL;
+      })
+      .catch(message => {
+        uploadedImageData = null;
+        uploadPreview.removeAttribute('src');
+        uploadInput.value = '';
+        alert(message);
+      });
+  });
 }
 
 // Use event delegation so loop-duplicate slides and dynamically added cards all flip correctly
